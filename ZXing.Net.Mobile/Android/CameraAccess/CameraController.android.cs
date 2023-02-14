@@ -217,100 +217,108 @@ namespace ZXing.Mobile.CameraAccess
 
 		void ApplyCameraSettings()
 		{
-			if (Camera == null)
+			try
 			{
-				OpenCamera();
-			}
-
-			// do nothing if something wrong with camera
-			if (Camera == null) return;
-
-			var parameters = Camera.GetParameters();
-			parameters.PreviewFormat = ImageFormatType.Nv21;
-
-			var supportedFocusModes = parameters.SupportedFocusModes;
-			if (scannerHost.ScanningOptions.DisableAutofocus)
-				parameters.FocusMode = Camera.Parameters.FocusModeFixed;
-			else if (Build.VERSION.SdkInt >= BuildVersionCodes.IceCreamSandwich &&
-				supportedFocusModes.Contains(Camera.Parameters.FocusModeContinuousPicture))
-				parameters.FocusMode = Camera.Parameters.FocusModeContinuousPicture;
-			else if (supportedFocusModes.Contains(Camera.Parameters.FocusModeContinuousVideo))
-				parameters.FocusMode = Camera.Parameters.FocusModeContinuousVideo;
-			else if (supportedFocusModes.Contains(Camera.Parameters.FocusModeAuto))
-				parameters.FocusMode = Camera.Parameters.FocusModeAuto;
-			else if (supportedFocusModes.Contains(Camera.Parameters.FocusModeFixed))
-				parameters.FocusMode = Camera.Parameters.FocusModeFixed;
-
-			var selectedFps = parameters.SupportedPreviewFpsRange.FirstOrDefault();
-			if (selectedFps != null)
-			{
-				// This will make sure we select a range with the highest maximum fps
-				// which still has the lowest minimum fps (Widest Range)
-				foreach (var fpsRange in parameters.SupportedPreviewFpsRange)
+				if (Camera == null)
 				{
-					if (fpsRange[1] > selectedFps[1] || fpsRange[1] == selectedFps[1] && fpsRange[0] < selectedFps[0])
-						selectedFps = fpsRange;
+					OpenCamera();
 				}
-				parameters.SetPreviewFpsRange(selectedFps[0], selectedFps[1]);
-			}
 
-			CameraResolution resolution = null;
-			var supportedPreviewSizes = parameters.SupportedPreviewSizes;
-			if (supportedPreviewSizes != null)
-			{
-				var availableResolutions = supportedPreviewSizes.Select(sps => new CameraResolution
+				// do nothing if something wrong with camera
+				if (Camera == null) return;
+
+				var parameters = Camera.GetParameters();
+				parameters.PreviewFormat = ImageFormatType.Nv21;
+
+				var supportedFocusModes = parameters.SupportedFocusModes;
+				if (scannerHost.ScanningOptions.DisableAutofocus)
+					parameters.FocusMode = Camera.Parameters.FocusModeFixed;
+				else if (Build.VERSION.SdkInt >= BuildVersionCodes.IceCreamSandwich &&
+					supportedFocusModes.Contains(Camera.Parameters.FocusModeContinuousPicture))
+					parameters.FocusMode = Camera.Parameters.FocusModeContinuousPicture;
+				else if (supportedFocusModes.Contains(Camera.Parameters.FocusModeContinuousVideo))
+					parameters.FocusMode = Camera.Parameters.FocusModeContinuousVideo;
+				else if (supportedFocusModes.Contains(Camera.Parameters.FocusModeAuto))
+					parameters.FocusMode = Camera.Parameters.FocusModeAuto;
+				else if (supportedFocusModes.Contains(Camera.Parameters.FocusModeFixed))
+					parameters.FocusMode = Camera.Parameters.FocusModeFixed;
+
+				var selectedFps = parameters.SupportedPreviewFpsRange.FirstOrDefault();
+				if (selectedFps != null)
 				{
-					Width = sps.Width,
-					Height = sps.Height
-				});
-
-				// Try and get a desired resolution from the options selector
-				resolution = scannerHost.ScanningOptions.GetResolution(availableResolutions.ToList());
-
-				// If the user did not specify a resolution, let's try and find a suitable one
-				if (resolution == null)
-				{
-					foreach (var sps in supportedPreviewSizes)
+					// This will make sure we select a range with the highest maximum fps
+					// which still has the lowest minimum fps (Widest Range)
+					foreach (var fpsRange in parameters.SupportedPreviewFpsRange)
 					{
-						if (sps.Width >= 640 && sps.Width <= 1000 && sps.Height >= 360 && sps.Height <= 1000)
+						if (fpsRange[1] > selectedFps[1] || fpsRange[1] == selectedFps[1] && fpsRange[0] < selectedFps[0])
+							selectedFps = fpsRange;
+					}
+					parameters.SetPreviewFpsRange(selectedFps[0], selectedFps[1]);
+				}
+
+				CameraResolution resolution = null;
+				var supportedPreviewSizes = parameters.SupportedPreviewSizes;
+				if (supportedPreviewSizes != null)
+				{
+					var availableResolutions = supportedPreviewSizes.Select(sps => new CameraResolution
+					{
+						Width = sps.Width,
+						Height = sps.Height
+					});
+
+					// Try and get a desired resolution from the options selector
+					resolution = scannerHost.ScanningOptions.GetResolution(availableResolutions.ToList());
+
+					// If the user did not specify a resolution, let's try and find a suitable one
+					if (resolution == null)
+					{
+						foreach (var sps in supportedPreviewSizes)
 						{
-							resolution = new CameraResolution
+							if (sps.Width >= 640 && sps.Width <= 1000 && sps.Height >= 360 && sps.Height <= 1000)
 							{
-								Width = sps.Width,
-								Height = sps.Height
-							};
-							break;
+								resolution = new CameraResolution
+								{
+									Width = sps.Width,
+									Height = sps.Height
+								};
+								break;
+							}
 						}
 					}
 				}
-			}
 
-			// Google Glass requires this fix to display the camera output correctly
-			if (Build.Model.Contains("Glass"))
-			{
-				resolution = new CameraResolution
+				// Google Glass requires this fix to display the camera output correctly
+				if (Build.Model.Contains("Glass"))
 				{
-					Width = 640,
-					Height = 360
-				};
-				// Glass requires 30fps
-				parameters.SetPreviewFpsRange(30000, 30000);
+					resolution = new CameraResolution
+					{
+						Width = 640,
+						Height = 360
+					};
+					// Glass requires 30fps
+					parameters.SetPreviewFpsRange(30000, 30000);
+				}
+
+				// Hopefully a resolution was selected at some point
+				if (resolution != null)
+				{
+					Android.Util.Log.Debug(MobileBarcodeScanner.TAG,
+						"Selected Resolution: " + resolution.Width + "x" + resolution.Height);
+
+					CameraResolution = resolution;
+					parameters.SetPreviewSize(resolution.Width, resolution.Height);
+				}
+
+				Camera.SetParameters(parameters);
+
+				SetCameraDisplayOrientation();
 			}
-
-			// Hopefully a resolution was selected at some point
-			if (resolution != null)
-			{
-				Android.Util.Log.Debug(MobileBarcodeScanner.TAG,
-					"Selected Resolution: " + resolution.Width + "x" + resolution.Height);
-
-				CameraResolution = resolution;
-				parameters.SetPreviewSize(resolution.Width, resolution.Height);
-			}
-
-			Camera.SetParameters(parameters);
-
-			SetCameraDisplayOrientation();
-		}
+            catch (Exception ex)
+            {
+                //This try-catch block is added to void get parameter failed exception from Camera module occuring and violently APP CRASHING in production !!!!
+                Android.Util.Log.Debug(MobileBarcodeScanner.TAG, "ApplyCameraSettings Failed: {0}", ex);
+            }
+        }
 
 		void AutoFocus(int x, int y, bool useCoordinates)
 		{
