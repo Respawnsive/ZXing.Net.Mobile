@@ -1,6 +1,6 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras/3.0.23">
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;Xamarin.iOS10;MonoAndroid10.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;Xamarin.iOS10;MonoAndroid13.0</TargetFrameworks>
 		<AssemblyName>ZXing.Net.Mobile.Forms</AssemblyName>
 		<RootNamespace>ZXing.Net.Mobile.Forms</RootNamespace>
 		<PackageId>Respawnsive.ZXing.Net.Mobile.Forms</PackageId>
@@ -49,16 +49,16 @@
 		<Compile Include="**\*.android.cs" />
 		<Compile Include="**\*.android.*.cs" />
 		<AndroidResource Include="Resources\xml\*.xml" />
-		<PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.2.0.6" />
+		<PackageReference Include="Xamarin.AndroidX.AppCompat" Version="1.6.0" />
 	</ItemGroup>
 	<ItemGroup Condition=" $(TargetFramework.StartsWith('Xamarin.iOS')) ">
 		<Compile Include="**\*.ios.cs" />
 		<Compile Include="**\*.ios.*.cs" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Xamarin.Essentials" Version="1.6.0" />
-		<PackageReference Include="Xamarin.Forms" Version="5.0.0.1874" />
-		<PackageReference Include="ZXing.Net" Version="0.16.6" />
+		<PackageReference Include="Xamarin.Essentials" Version="1.8.0" />
+		<PackageReference Include="Xamarin.Forms" Version="5.0.0.2612" />
+		<PackageReference Include="ZXing.Net" Version="0.16.9" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\ZXing.Net.Mobile\ZXing.Net.Mobile.csproj" />
